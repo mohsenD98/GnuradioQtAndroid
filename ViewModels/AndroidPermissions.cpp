@@ -6,24 +6,17 @@
 bool checkAppPermissions(QString permission)
 {
     auto result = QtAndroidPrivate::checkPermission(permission).result();
-    qDebug() << "--------------------" << permission << result << QtAndroidPrivate::Denied;
     if (result == QtAndroidPrivate::Denied) {
         auto result2 = QtAndroidPrivate::requestPermission(permission).result();
         qDebug() << permission << result2;
 
         if (result2 == QtAndroidPrivate::Denied)
             return false;
-
         else {
-            /* Here is Your method to upload to storage */
-
             return true;
         }
     }
-
     else {
-        /* Here is Your method to upload to storage */
-
         return true;
     }
 }
@@ -40,7 +33,16 @@ AndroidPermissions::AndroidPermissions(QObject *parent)
 void AndroidPermissions::requestPermissions()
 {
     qDebug() << "requesting Permissions...";
-    setStoragePermission(checkAppPermissions("android.permission.WRITE_EXTERNAL_STORAGE") && checkAppPermissions("android.permission.READ_EXTERNAL_STORAGE"));
+
+    QJniObject javaMessage = QJniObject::fromString("mohsenmessage");
+    QJniObject::callStaticMethod<void>("org/qtproject/example/JniMessenger",
+                                       "printFromJava",
+                                       "(Ljava/lang/String;)V",
+                                        javaMessage.object<jstring>());
+
+
+
+//    setStoragePermission(checkAppPermissions("android.permission.WRITE_EXTERNAL_STORAGE") && checkAppPermissions("android.permission.READ_EXTERNAL_STORAGE"));
 //    setUsbPermission(checkAppPermissions("com.android.example.USB_PERMISSION"));
 }
 
