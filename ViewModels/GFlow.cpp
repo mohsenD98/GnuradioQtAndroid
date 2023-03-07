@@ -3,6 +3,8 @@
 #include <QDebug>
 #include <QStandardPaths>
 #include <qdir.h>
+#include <iostream>
+#include <complex.h>
 
 #include "DeviceInfo.h"
 #include "AndroidLogger.h"
@@ -19,9 +21,7 @@ void GFlow::initial()
     setenv("GR_CONF_CONTROLPORT_ON", "true", 1);
 
     tb = gr::make_top_block("fg");
-
     ss << "hackrf=0,fd=" << DeviceInfo::getInstance().fd << ",usbfs=" << DeviceInfo::getInstance().path.toStdString();
-
     GR_INFO("gnuradio", ss.str());
 
     src = osmosdr::source::make(ss.str());
@@ -31,52 +31,29 @@ void GFlow::initial()
     src->set_gain(24, "IF", 0);
     src->set_gain(20, "BB", 0);
 
-    const QDir writeDir = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/mgnuradioandroitest1";
-    if (!writeDir.mkpath("."))
-        qFatal("Failed to create writable directory at %s", qPrintable(writeDir.absolutePath()));
-
     QString folder=QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
-    QFile* file=new QFile(folder+"/test.txt");
-    if (!file->exists()) {
-        // create the folder, if necessary
-        QDir* dir=new QDir(folder);
-        if (!dir->exists()) {
-            AndroidLogger::sendAdbLog("creating new folder");
-            dir->mkpath(".");
-        }
-        AndroidLogger::sendAdbLog("creating new file");
-        file->open(QIODevice::WriteOnly);
-        file->write("Hello World");
-        file->close();
-    }
-    if (file->exists()) {
-        AndroidLogger::sendAdbLog("file exists");
-        file->open(QIODevice::ReadOnly);
-        QByteArray data=file->readAll();
-        file->close();
-    }
-
+    file_sink = gr::blocks::file_sink::make(sizeof(std::complex<float>), (folder+"/test.sig").toStdString().c_str(), false);
     AndroidLogger::sendAdbLog("selected file is this: "+(folder+"/test.sig"));
-
-
-    file_sink= gr::blocks::file_sink::make(sizeof(char), (folder+"/test.sig").toStdString().c_str(), false);
-
+    AndroidLogger::sendAdbLog("initialization finished");
 }
 
 void GFlow::connect()
 {
     tb->connect(src, 0, file_sink, 0);
+    AndroidLogger::sendAdbLog("connection finished");
 }
 
 void GFlow::start()
 {
     tb->start();
+    AndroidLogger::sendAdbLog("started");
 }
 
 void GFlow::stop()
 {
-    tb->wait();
     tb->stop();
+    tb->wait();
+    AndroidLogger::sendAdbLog("stoped");
 }
 
 

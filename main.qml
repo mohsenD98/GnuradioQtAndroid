@@ -34,29 +34,17 @@ Window {
         opacity: enabled ? 1 : 0.4
 
         Button{
-            text: "detect device"
-            onClicked: {
-                flow.fd = "72"
-                flow.usbPath = "/dev/bus/usb/001/002"
-                flow.initial()
-                log.text = "initializing blocks success@!"
-            }
-        }
-
-        Button{
             text: "initize blocks"
             onClicked: {
-                flow.fd = "72"
-                flow.usbPath = "/dev/bus/usb/001/002"
+                log.text = "initializing"
                 flow.initial()
-                log.text = "initializing blocks success@!"
             }
         }
 
         Button{
             text: "connecting blocks"
             onClicked: {
-                log.text = "connecting blocks"
+                log.text = "connecting"
                 flow.connect()
 
             }
@@ -65,14 +53,16 @@ Window {
         Button{
             text: "running blocks"
             onClicked: {
-                log.text = "not developed"
+                log.text = "running"
+                flow.start()
             }
         }
 
         Button{
             text: "stop"
             onClicked: {
-                log.text = "not developed"
+                log.text = "stopping"
+                flow.stop()
             }
         }
     }
