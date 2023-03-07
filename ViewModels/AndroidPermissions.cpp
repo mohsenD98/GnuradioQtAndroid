@@ -2,10 +2,11 @@
 
 #include <QDebug>
 #include <QCoreApplication>
-#include "AndroidLogger.h"
-
 #include <jni.h>
 #include <QDebug>
+
+#include "AndroidLogger.h"
+#include "DeviceInfo.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -23,23 +24,15 @@ JNIEXPORT void JNICALL
     int pId = (int) p;
     int mFd = (int) fd;
     AndroidLogger::sendAdbLog("path: "+ mpath + "\nVID:" + QString::number(vId) + "\npID:" + QString::number(pId) + "\nfd: " + QString::number(mFd));
+    DeviceInfo::getInstance().setValues(mpath, mFd, pId, vId);
+    AndroidPermissions::getInstance().setStoragePermission(true);
+    AndroidPermissions::getInstance().setUsbPermission(true);
 }
 
 
 #ifdef __cplusplus
 }
 #endif
-
-AndroidPermissions::AndroidPermissions(QObject *parent)
-    : QObject{parent}
-{
-    setUsbPermission(true);
-    setStoragePermission(false);
-
-#ifdef Q_OS_ANDROID
-    activity = QJniObject(QNativeInterface::QAndroidApplication::context());
-#endif
-}
 
 void AndroidPermissions::requestPermissions()
 {
@@ -56,10 +49,21 @@ void AndroidPermissions::requestPermissions()
     QJniObject::callStaticMethod<void>("org/qtproject/example/HandlePermissions",
                                        "checkStoragePermission",
                                        "(Landroid/app/Activity;Ljava/lang/String;)V",
-                                        activity.object<jobject>(), javaMessage.object<jstring>());
+                                       activity.object<jobject>(), javaMessage.object<jstring>());
 }
 
-bool AndroidPermissions::storagePermission() const
+AndroidPermissions::AndroidPermissions()
+{
+    setUsbPermission(false);
+    setStoragePermission(false);
+
+#ifdef Q_OS_ANDROID
+    activity = QJniObject(QNativeInterface::QAndroidApplication::context());
+#endif
+
+}
+
+bool AndroidPermissions::storagePermission()
 {
     return m_storagePermission;
 }
@@ -72,7 +76,7 @@ void AndroidPermissions::setStoragePermission(bool newStoragePermission)
     emit storagePermissionChanged();
 }
 
-bool AndroidPermissions::usbPermission() const
+bool AndroidPermissions::usbPermission()
 {
     return m_usbPermission;
 }

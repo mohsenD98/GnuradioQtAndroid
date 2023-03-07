@@ -2,6 +2,10 @@
 
 #include <QDebug>
 #include <QStandardPaths>
+#include <qdir.h>
+
+#include "DeviceInfo.h"
+#include "AndroidLogger.h"
 
 GFlow::GFlow(QObject *parent)
     : QObject{parent}
@@ -13,79 +17,67 @@ void GFlow::initial()
 {
     setenv("VOLK_CONFIGPATH", getenv("EXTERNAL_STORAGE"), 1);
     setenv("GR_CONF_CONTROLPORT_ON", "true", 1);
-    float samp_rate = 320e3;
-    std::vector<float> chan_taps = gr::filter::firdes::low_pass_2(1, samp_rate, 150e3, 50e3, 60,
-                                                                  gr::filter::firdes::WIN_HANN);
-    int resamp = 10;
-    std::vector<float> audio_taps = gr::filter::firdes::low_pass_2(6, samp_rate, 10e3, 2e3, 60,
-                                                                   gr::filter::firdes::WIN_HANN);
-    float max_dev = 75e3;
-    float fm_demod_gain = static_cast<float>(samp_rate / (2.0f * M_PI * max_dev*15));
-    float audio_rate = samp_rate / resamp;
+
     tb = gr::make_top_block("fg");
 
-    // FD is not a correct number right now!! should be corrected!
-    ss << "hackrf=0,fd=" << fd() << ",usbfs=" << usbPath().toStdString();
+    ss << "hackrf=0,fd=" << DeviceInfo::getInstance().fd << ",usbfs=" << DeviceInfo::getInstance().path.toStdString();
 
     GR_INFO("gnuradio", ss.str());
 
-//    src = osmosdr::source::make(ss.str());
-//    src->set_sample_rate(2e6);
-//    src->set_center_freq(96.8e6);
-//    src->set_gain(0, "RF", 0);
-//    src->set_gain(24, "IF", 0);
-//    src->set_gain(20, "BB", 0);
+    src = osmosdr::source::make(ss.str());
+    src->set_sample_rate(2e6);
+    src->set_center_freq(96.8e6);
+    src->set_gain(0, "RF", 0);
+    src->set_gain(24, "IF", 0);
+    src->set_gain(20, "BB", 0);
 
-    file_source = gr::blocks::file_source::make(sizeof(char), "/storage/emulated/0/Download/fan2016.pdf", false);
-    xlat = gr::filter::freq_xlating_fir_filter_ccf::make(1, {1}, -.5e6, 2e6);
+    const QDir writeDir = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/mgnuradioandroitest1";
+    if (!writeDir.mkpath("."))
+        qFatal("Failed to create writable directory at %s", qPrintable(writeDir.absolutePath()));
 
-//    arb = gr::filter::pfb_arb_resampler_ccf::make(324e3/2e6, {}, 32);
-//    arb->declare_sample_delay(0);
+    QString folder=QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
+    QFile* file=new QFile(folder+"/test.txt");
+    if (!file->exists()) {
+        // create the folder, if necessary
+        QDir* dir=new QDir(folder);
+        if (!dir->exists()) {
+            AndroidLogger::sendAdbLog("creating new folder");
+            dir->mkpath(".");
+        }
+        AndroidLogger::sendAdbLog("creating new file");
+        file->open(QIODevice::WriteOnly);
+        file->write("Hello World");
+        file->close();
+    }
+    if (file->exists()) {
+        AndroidLogger::sendAdbLog("file exists");
+        file->open(QIODevice::ReadOnly);
+        QByteArray data=file->readAll();
+        file->close();
+    }
 
-    chan_filt = gr::filter::fir_filter_ccf::make(1, chan_taps);
-    demod = gr::analog::quadrature_demod_cf::make(fm_demod_gain);
-    audio_filt = gr::filter::fir_filter_fff::make(resamp, audio_taps);
-//    probe = gr::fft::ctrlport_probe_psd::make("probe", "foo", 1024);
-    snk = gr::grand::opensl_sink::make(int(audio_rate));
+    AndroidLogger::sendAdbLog("selected file is this: "+(folder+"/test.sig"));
 
-    qDebug() << "init done!";
+
+    file_sink= gr::blocks::file_sink::make(sizeof(char), (folder+"/test.sig").toStdString().c_str(), false);
+
 }
 
 void GFlow::connect()
 {
-    tb->connect(src, 0, xlat, 0);
-    tb->connect(xlat, 0, arb, 0);
-    tb->connect(xlat, 0, probe, 0);
-    tb->connect(arb, 0, chan_filt, 0);
-    tb->connect(chan_filt, 0, demod, 0);
-    tb->connect(demod, 0, audio_filt, 0);
-    tb->connect(audio_filt, 0, snk, 0);
-
-    qDebug() << "connect done!";
+    tb->connect(src, 0, file_sink, 0);
 }
 
-const QString &GFlow::usbPath() const
+void GFlow::start()
 {
-    return m_usbPath;
+    tb->start();
 }
 
-void GFlow::setUsbPath(const QString &newUsbPath)
+void GFlow::stop()
 {
-    if (m_usbPath == newUsbPath)
-        return;
-    m_usbPath = newUsbPath;
-    emit usbPathChanged();
+    tb->wait();
+    tb->stop();
 }
 
-int GFlow::fd() const
-{
-    return m_fd;
-}
 
-void GFlow::setFd(int newFd)
-{
-    if (m_fd == newFd)
-        return;
-    m_fd = newFd;
-    emit fdChanged();
-}
+

@@ -6,8 +6,6 @@
 #include "ViewModels/GFlow.h"
 #include "ViewModels/AndroidPermissions.h"
 
-#define qDebug qout
-
 int main(int argc, char *argv[])
 {
     QGuiApplication app(argc, argv);
@@ -15,10 +13,9 @@ int main(int argc, char *argv[])
     QQmlApplicationEngine engine;
 
     GFlow flow;
-    AndroidPermissions androidPermissions;
 
     engine.rootContext()->setContextProperty("flow", &flow);
-    engine.rootContext()->setContextProperty("androidPermissions", &androidPermissions);
+    engine.rootContext()->setContextProperty("androidPermissions", &AndroidPermissions::getInstance());
 
     engine.load("qrc:/main.qml");
 

@@ -30,7 +30,7 @@ Window {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.bottom: parent.bottom
-        enabled: androidPermissions? androidPermissions.storagePermission && androidPermissions.usbPermission : false
+        enabled: androidPermissions? (androidPermissions.storagePermission && androidPermissions.usbPermission) : false
         opacity: enabled ? 1 : 0.4
 
         Button{

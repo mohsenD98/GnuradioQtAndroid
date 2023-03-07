@@ -5,6 +5,7 @@ QT += quick core-private
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
+        ViewModels/DeviceInfo.cpp \
         ViewModels/GFlow.cpp \
         ViewModels/AndroidPermissions.cpp \
         main.cpp
@@ -57,5 +58,6 @@ LIBS += $$TOOLCHAIN/armeabi-v7a/lib/libgnuradio-fft.so
 
 HEADERS += \
     ViewModels/AndroidLogger.h \
+    ViewModels/DeviceInfo.h \
     ViewModels/GFlow.h \
     ViewModels/AndroidPermissions.h

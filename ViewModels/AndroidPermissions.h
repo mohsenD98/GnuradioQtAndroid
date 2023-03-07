@@ -15,12 +15,16 @@ class AndroidPermissions : public QObject
     Q_PROPERTY(bool usbPermission READ usbPermission WRITE setUsbPermission NOTIFY usbPermissionChanged)
 
 public:
-    explicit AndroidPermissions(QObject *parent = nullptr);
+    static AndroidPermissions& getInstance()
+    {
+        static AndroidPermissions instance;
+        return instance;
+    }
 
-    bool storagePermission() const;
+    bool storagePermission();
     void setStoragePermission(bool newStoragePermission);
 
-    bool usbPermission() const;
+    bool usbPermission() ;
     void setUsbPermission(bool newStoragePermission);
 
 public slots:
@@ -31,13 +35,17 @@ signals:
     void usbPermissionChanged();
 
 private:
+    AndroidPermissions();
+    AndroidPermissions(AndroidPermissions const&) = delete;
+    void operator=(AndroidPermissions const&)  = delete;
+
+private:
     bool m_storagePermission;
     bool m_usbPermission;
 
 #ifdef Q_OS_ANDROID
     QJniEnvironment _env;
     QJniObject  activity;
-    static void jniPhoneNums(JNIEnv *env, jobject obj, jobjectArray stringArray);
 #endif
 
 };
