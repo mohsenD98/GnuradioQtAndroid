@@ -1,25 +1,34 @@
 #include "AndroidPermissions.h"
 
 #include <QDebug>
-#include <QtCore/private/qandroidextras_p.h>
+#include <QCoreApplication>
+#include "AndroidLogger.h"
 
-bool checkAppPermissions(QString permission)
+#include <jni.h>
+#include <QDebug>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+JNIEXPORT void JNICALL
+  Java_org_qtproject_example_HandlePermissions_sendParamsToCpp(JNIEnv *env,
+                                                    jobject obj,
+                                                    jstring path, jint fd, jint v, jint p)
 {
-    auto result = QtAndroidPrivate::checkPermission(permission).result();
-    if (result == QtAndroidPrivate::Denied) {
-        auto result2 = QtAndroidPrivate::requestPermission(permission).result();
-        qDebug() << permission << result2;
 
-        if (result2 == QtAndroidPrivate::Denied)
-            return false;
-        else {
-            return true;
-        }
-    }
-    else {
-        return true;
-    }
+    AndroidLogger::sendAdbLog("ok back from java!");
+    QString mpath(env->GetStringUTFChars(path, 0));
+    int vId = (int) v;
+    int pId = (int) p;
+    int mFd = (int) fd;
+    AndroidLogger::sendAdbLog("path: "+ mpath + "\nVID:" + QString::number(vId) + "\npID:" + QString::number(pId) + "\nfd: " + QString::number(mFd));
 }
+
+
+#ifdef __cplusplus
+}
+#endif
 
 AndroidPermissions::AndroidPermissions(QObject *parent)
     : QObject{parent}
@@ -27,23 +36,27 @@ AndroidPermissions::AndroidPermissions(QObject *parent)
     setUsbPermission(true);
     setStoragePermission(false);
 
-    requestPermissions();
+#ifdef Q_OS_ANDROID
+    activity = QJniObject(QNativeInterface::QAndroidApplication::context());
+#endif
 }
 
 void AndroidPermissions::requestPermissions()
 {
-    qDebug() << "requesting Permissions...";
-
     QJniObject javaMessage = QJniObject::fromString("mohsenmessage");
-    QJniObject::callStaticMethod<void>("org/qtproject/example/JniMessenger",
-                                       "printFromJava",
-                                       "(Ljava/lang/String;)V",
-                                        javaMessage.object<jstring>());
 
+    QJniEnvironment env;
+    jclass javaClass = env.findClass("org/qtproject/example/HandlePermissions");
+    QJniObject classObject(javaClass);
 
+    classObject.callMethod<void>("registerServiceBroadcastReceiver",
+                                 "(Landroid/content/Context;)V",
+                                 activity.object<jobject>());
 
-//    setStoragePermission(checkAppPermissions("android.permission.WRITE_EXTERNAL_STORAGE") && checkAppPermissions("android.permission.READ_EXTERNAL_STORAGE"));
-//    setUsbPermission(checkAppPermissions("com.android.example.USB_PERMISSION"));
+    QJniObject::callStaticMethod<void>("org/qtproject/example/HandlePermissions",
+                                       "checkStoragePermission",
+                                       "(Landroid/app/Activity;Ljava/lang/String;)V",
+                                        activity.object<jobject>(), javaMessage.object<jstring>());
 }
 
 bool AndroidPermissions::storagePermission() const

@@ -31,6 +31,7 @@ DISTFILES += \
     android/gradlew \
     android/gradlew.bat \
     android/res/values/libs.xml \
+    android/src/org/qtproject/example/HandlePermissions.java \
     android/src/org/qtproject/example/JniMessenger.java
 
 contains(ANDROID_TARGET_ARCH,armeabi-v7a) {
@@ -55,5 +56,6 @@ LIBS += $$TOOLCHAIN/armeabi-v7a/lib/libgnuradio-filter.so
 LIBS += $$TOOLCHAIN/armeabi-v7a/lib/libgnuradio-fft.so
 
 HEADERS += \
+    ViewModels/AndroidLogger.h \
     ViewModels/GFlow.h \
     ViewModels/AndroidPermissions.h

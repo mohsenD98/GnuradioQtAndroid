@@ -2,6 +2,12 @@
 
 #include <QObject>
 
+#ifdef Q_OS_ANDROID
+#include <QJniEnvironment>
+#include <QtCore/private/qandroidextras_p.h>
+#include <QJniObject>
+#endif
+
 class AndroidPermissions : public QObject
 {
     Q_OBJECT
@@ -27,4 +33,11 @@ signals:
 private:
     bool m_storagePermission;
     bool m_usbPermission;
+
+#ifdef Q_OS_ANDROID
+    QJniEnvironment _env;
+    QJniObject  activity;
+    static void jniPhoneNums(JNIEnv *env, jobject obj, jobjectArray stringArray);
+#endif
+
 };

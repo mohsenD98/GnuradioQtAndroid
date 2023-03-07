@@ -1,12 +1,13 @@
 package org.qtproject.example;
+import android.util.Log;
 
 public class JniMessenger
 {
     public JniMessenger() {}
 
-    public static void printFromJava(String message)
+    public static void Logger(String message)
     {
-        System.out.println("This is printed from JAVA, message is: " + message);
+        Log.i("TAG", "[c++] " + message);
     }
 }
 
